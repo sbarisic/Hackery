@@ -25,9 +25,17 @@ namespace Hackery {
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern bool VirtualProtect(IntPtr Addr, uint Size, MemProtection NewProtect, out MemProtection OldProtect);
 
+		public static bool VirtualProtect(IntPtr Addr, int Size, MemProtection NewProtect, out MemProtection OldProtect) {
+			return VirtualProtect(Addr, (uint)Size, NewProtect, out OldProtect);
+		}
+
 		public static bool VirtualProtect(IntPtr Addr, uint Size, MemProtection NewProtect) {
 			MemProtection Old;
 			return VirtualProtect(Addr, Size, NewProtect, out Old);
+		}
+
+		public static bool VirtualProtect(IntPtr Addr, int Size, MemProtection NewProtect) {
+			return VirtualProtect(Addr, (uint)Size, NewProtect);
 		}
 	}
 }
