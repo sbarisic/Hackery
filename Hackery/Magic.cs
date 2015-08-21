@@ -8,21 +8,23 @@ using System.Reflection;
 
 namespace Hackery {
 	static class Magic {
-		public static void DoMagic() {
-
-		}
-
-		public static void UndoMagic() {
-
-		}
-
 		public static void UnmanagedDelete<T>(T Obj) where T : UObject {
+			if (Obj == null)
+				return;
+
+			// Disabled this before i end up writing another garbage collector
+			/*FieldInfo[] Fields = Obj.GetType().GetFields();
+			for (int i = 0; i < Fields.Length; i++) 
+				if (typeof(UObject).IsAssignableFrom(Fields[i].FieldType))
+					UnmanagedDelete(Fields[i].GetValue(Obj) as T);*/
+
 			((UObject)Obj).dtor();
 			Marshal.FreeHGlobal(Obj.ToObjPointer() - 4);
 		}
 
 		public static T UnmanagedNew<T>(out IntPtr Handle) where T : UObject {
 			Type ClassType = typeof(T);
+			Marshal.PrelinkAll(ClassType);
 			IntPtr TypePtr = ClassType.TypeHandle.Value;
 			int Size = Marshal.ReadInt32(TypePtr, 4);
 
