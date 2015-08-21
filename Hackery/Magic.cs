@@ -108,6 +108,7 @@ namespace Hackery {
 			var newParameters = newMethod.GetParameters().Select(p => p.ParameterType).ToList();
 			if (newMethod.IsStatic == false) newParameters.Insert(0, newMethod.DeclaringType);
 
+			//TODO: Check whether a method with fewer parameters can safely be hooked into one with more.
 			if (oldParameters.Count != newParameters.Count) throw new ArgumentException($"Parameter count (eventually including initial \"this\" parameter) mismatch: Tried to hook method with {oldParameters.Count} with one with {newParameters.Count} parameters.");
 			for (int i = 0; i < oldParameters.Count; i++)
 			{ if (newParameters[i].IsAssignableFrom(oldParameters[i]) == false) throw new ArgumentException($"Parameter type mismatch: Can't convert assign {oldParameters[i]} to {newParameters[i]} at position {i} (eventually including initial \"this\" parameter)."); }
