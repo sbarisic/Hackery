@@ -49,13 +49,12 @@ namespace Hackery {
 			byte[] JMP = new byte[] { 0xE9, 0x90, 0x90, 0x90, 0x90, 0xC3 };
 			Array.Copy(BitConverter.GetBytes(NewFunc.ToInt32() - OldFunc.ToInt32() - 5), 0, JMP, 1, 4);
 
-			MemProtection Old;
-			Kernel32.VirtualProtect(OldFunc, (uint)JMP.Length, MemProtection.ExecReadWrite, out Old);
-			byte[] Orig = new byte[JMP.Length];
-			Marshal.Copy(OldFunc, Orig, 0, Orig.Length);
-			Marshal.Copy(JMP, 0, OldFunc, JMP.Length);
-			Kernel32.VirtualProtect(OldFunc, (uint)JMP.Length, Old);
-			return Orig;
+			using (MemoryManagement.Protect(OldFunc, (uint)JMP.Length, MemProtection.ExecReadWrite)) {
+				byte[] Orig = new byte[JMP.Length];
+				Marshal.Copy(OldFunc, Orig, 0, Orig.Length);
+				Marshal.Copy(JMP, 0, OldFunc, JMP.Length);
+				return Orig;
+			}
 		}
 
 		public static void Hook(MethodInfo OldFunc, IntPtr NewFunc) {
