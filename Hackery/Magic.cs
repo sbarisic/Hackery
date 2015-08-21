@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
-namespace Hackery {
+namespace Hackery
+{
 	static class Magic {
 		public static void UnmanagedDelete<T>(T Obj) where T : UObject {
 			if (Obj == null)
@@ -57,13 +55,9 @@ namespace Hackery {
 			}
 		}
 
-		public static void Hook(MethodInfo OldFunc, IntPtr NewFunc) {
-			Hook(GetNativePointer(OldFunc), NewFunc);
-		}
+		public static HookHandle Hook(MethodInfo OldFunc, IntPtr NewFunc) => new HookHandle(OldFunc, Hook(GetNativePointer(OldFunc), NewFunc));
 
-		public static void Hook(MethodInfo OldFunc, MethodInfo NewFunc) {
-			Hook(OldFunc, GetNativePointer(NewFunc));
-		}
+		public static HookHandle Hook(MethodInfo OldFunc, MethodInfo NewFunc) => Hook(OldFunc, GetNativePointer(NewFunc));
 
 		/// <summary>
 		/// Modifies the underlying method of <paramref name="old"/> to immediately jump to <paramref name="new"/>.
@@ -71,7 +65,7 @@ namespace Hackery {
 		/// <typeparam name="T">A delegate type matching the methods to hook together.</typeparam>
 		/// <param name="old">An instance of <typeparamref name="T"/> pointing to the method to hook.</param>
 		/// <param name="new">An instance of <typeparamref name="T"/> pointing to the hook target.</param>
-		public static void Hook<T>(T old, T @new) {
+		public static HookHandle Hook<T>(T old, T @new) {
 			if (typeof(Delegate).IsAssignableFrom(typeof(T)) == false) throw new InvalidOperationException("T must be a Delegate type.");
 			var oldMethod = ((Delegate)(object)old).Method;
 			var newMethod = ((Delegate)(object)@new).Method;
@@ -79,7 +73,7 @@ namespace Hackery {
 			if (oldMethod.IsStatic != newMethod.IsStatic) throw new ArgumentException("OldFunc and NewFunc must be either both static or both instance methods for this Hook overload.");
 			if (oldMethod.IsStatic == false && newMethod.DeclaringType.IsAssignableFrom(oldMethod.DeclaringType) == false) throw new ArgumentException("\"This\" parameter type mismatch.");
 
-			Hook(oldMethod, newMethod);
+			return Hook(oldMethod, newMethod);
 		}
 
 		/// <summary>
@@ -89,7 +83,7 @@ namespace Hackery {
 		/// <typeparam name="THook">A delegate type matching the method hooked into <paramref name="old"/>.</typeparam>
 		/// <param name="old">An instance of <typeparamref name="THooked"/> pointing to the method to hook.</param>
 		/// <param name="new">An instance of <typeparamref name="THook"/> pointing to the hook target.</param>
-		public static void Hook<THooked, THook>(THooked old, THook @new) {
+		public static HookHandle Hook<THooked, THook>(THooked old, THook @new) {
 			if (typeof(Delegate).IsAssignableFrom(typeof(THooked)) == false) throw new InvalidOperationException("THooked must be a Delegate type.");
 			if (typeof(Delegate).IsAssignableFrom(typeof(THook)) == false) throw new InvalidOperationException("THook must be a Delegate type.");
 			var oldMethod = ((Delegate)(object)old).Method;
@@ -112,7 +106,7 @@ namespace Hackery {
 			for (int i = 0; i < oldParameters.Count; i++)
 			{ if (newParameters[i].IsAssignableFrom(oldParameters[i]) == false) throw new ArgumentException($"Parameter type mismatch: Can't convert assign {oldParameters[i]} to {newParameters[i]} at position {i} (eventually including initial \"this\" parameter)."); }
 
-			Hook(oldMethod, newMethod);
+			return Hook(oldMethod, newMethod);
 		}
 
 		public static IntPtr GetNativePointer(MethodInfo M) {
