@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 namespace Hackery {
 	static class ObjectPointer {
 		static ObjectPointer() {
-			Magic.Hook(typeof(ObjectPointer).GetStaticMethod("_ToPointer"), typeof(ObjectPointer).GetStaticMethod("_ReturnObject"));
-			Magic.Hook(typeof(ObjectPointer).GetStaticMethod("_ToObject"), typeof(ObjectPointer).GetStaticMethod("_ReturnUInt"));
+			HookHandle.CreateHook<Func<object, uint>, Func<object, object>>(_ToPointer, _ReturnObject);
+			HookHandle.CreateHook<Func<uint, object>, Func<uint, uint>>(_ToObject, _ReturnUInt);
+			
+			//HookHandle.CreateHook(typeof(ObjectPointer).GetStaticMethod("_ToPointer"), typeof(ObjectPointer).GetStaticMethod("_ReturnObject"));
+			//HookHandle.CreateHook(typeof(ObjectPointer).GetStaticMethod("_ToObject"), typeof(ObjectPointer).GetStaticMethod("_ReturnUInt"));
 		}
 
 		static object _ReturnObject(object Obj) {
