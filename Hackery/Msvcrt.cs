@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 namespace Hackery {
-	static class Msvcrt {
+	public static class Msvcrt {
 		[DllImport("msvcrt", SetLastError = true)]
 		public static extern IntPtr freopen(string Filename, string Mode, IntPtr Stream);
 	}

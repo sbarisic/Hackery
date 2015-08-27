@@ -8,13 +8,13 @@ using System.Diagnostics;
 
 namespace Hackery {
 	[StructLayout(LayoutKind.Sequential)]
-	struct CLIENT_ID {
+	public struct CLIENT_ID {
 		public IntPtr UniqueProcess;
 		public IntPtr UniqueThread;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	unsafe struct SectionImageInfo {
+	public unsafe struct SectionImageInfo {
 		public IntPtr EntryPoint;
 		public uint StackZeroBits;
 		public uint StackReserved;
@@ -29,7 +29,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct PROCESS_INFORMATION {
+	public struct PROCESS_INFORMATION {
 		public IntPtr Process;
 		public IntPtr Thread;
 		public CLIENT_ID CID;
@@ -44,7 +44,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct ProcessInfo {
+	public struct ProcessInfo {
 		public uint Size;
 		public IntPtr Process;
 		public IntPtr Thread;
@@ -53,7 +53,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct CSRSS_MESSAGE {
+	public struct CSRSS_MESSAGE {
 		public uint Unknown1;
 		public uint Opcode;
 		public uint Status;
@@ -61,7 +61,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct PORT_MESSAGE {
+	public struct PORT_MESSAGE {
 		public uint Unknown1;
 		public uint Unknown2;
 		public CLIENT_ID ClientID;
@@ -70,7 +70,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	unsafe struct CSRMsg {
+	public unsafe struct CSRMsg {
 		public PORT_MESSAGE PortMsg;
 		public CSRSS_MESSAGE CSRSSMsg;
 		public PROCESS_INFORMATION ProcessInfo;
@@ -80,18 +80,18 @@ namespace Hackery {
 	}
 
 	[Flags()]
-	enum CloneProcessFlags : uint {
+	public enum CloneProcessFlags : uint {
 		CreateSuspended = 0x1,
 		InheritHandles = 0x2,
 		NoSync = 0x4,
 	}
 
-	enum CloneStatus : int {
+	public enum CloneStatus : int {
 		Parent = 0,
 		Child = 297
 	}
 
-	unsafe static class NTdll {
+	public unsafe static class NTdll {
 		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern CloneStatus RtlCloneUserProcess(CloneProcessFlags Flags, IntPtr ProcSecDesc, IntPtr ThreadSecDesc,
 			IntPtr DebugPort, ProcessInfo* ProcessInfo);
@@ -120,6 +120,9 @@ namespace Hackery {
 
 		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern void RtlExitUserThread(int Status);
+
+		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern void RtlExitUserProcess(int Status);
 
 		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern void CsrClientCallServer(CSRMsg* Msg, int A = 0, int B = 0x10000, int C = 0x24);

@@ -33,11 +33,11 @@ namespace Hackery {
 		WriteWatch = 0x200000
 	}
 
-	enum ProcessAccess : uint {
+	public enum ProcessAccess : uint {
 		AllAccess = 0x1F0FFF
 	}
 
-	unsafe static class Kernel32 {
+	public unsafe static class Kernel32 {
 		public const uint INFINITE = 0xFFFFFFFF;
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]

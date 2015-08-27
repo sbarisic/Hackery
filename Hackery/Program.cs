@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Reflection;
 using System.Windows.Forms;
 using System.Diagnostics;
@@ -21,13 +22,13 @@ namespace Hackery {
 			Console.Title = "Hackery";
 			Console.WriteLine("PID: {0}", Process.GetCurrentProcess().Id);
 
-			Inject(ReadInt("Enter PID: "), "Inkjet.dll", "Init");
+			Process P = Process.GetProcessesByName("Notepad++").First();
+			Console.WriteLine("Injecting into {0}", P.Id);
 
-			Console.WriteLine("Done!");
-			Console.ReadLine();
+			Inject(P.Id, "Inkjet.dll", "Init");
 		}
 
-		static void Inject(int PID, string Module, string Fnc) {
+		static void Inject(int PID, string Module, string Fnc, bool Wait = false) {
 			IntPtr Kernel = Kernel32.LoadLibrary("kernel32.dll");
 			IntPtr Mod = Kernel32.LoadLibrary(Module);
 			IntPtr Proc = Kernel32.OpenProcess(ProcessAccess.AllAccess, false, PID);
@@ -36,7 +37,7 @@ namespace Hackery {
 			Kernel32.WriteProcessMemory(Proc, NameMem, Encoding.ASCII.GetBytes(Path.GetFullPath(Module)));
 
 			ExecThread(Proc, Kernel32.GetProcAddress(Kernel, "LoadLibraryA"), NameMem, true);
-			ExecThread(Proc, Kernel32.GetProcAddress(Mod, Fnc), IntPtr.Zero);
+			ExecThread(Proc, Kernel32.GetProcAddress(Mod, Fnc), IntPtr.Zero, Wait);
 
 			Kernel32.CloseHandle(Proc);
 			Kernel32.FreeLibrary(Kernel);
