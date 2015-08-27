@@ -3,6 +3,9 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Linq.Expressions;
+using System.Diagnostics;
+using System.Threading;
+using System.IO;
 
 namespace Hackery {
 	static class Magic {
@@ -41,6 +44,43 @@ namespace Hackery {
 		public static T UnmanagedNew<T>() where T : UObject {
 			IntPtr Ptr;
 			return UnmanagedNew<T>(out Ptr);
+		}
+
+		public unsafe static int Fork() {
+			ProcessInfo PInfo = new ProcessInfo();
+
+			//Kernel32.FreeConsole();
+			CloneStatus S = NTdll.RtlCloneUserProcess(CloneProcessFlags.CreateSuspended | CloneProcessFlags.InheritHandles, &PInfo);
+			/*Kernel32.AllocConsole();
+			Console.OpenStandardError();
+			Console.OpenStandardInput();
+			Console.OpenStandardOutput();*/
+
+			if (S == CloneStatus.Parent) {
+				int ChildPID = Kernel32.GetProcessId(PInfo.Process);
+				if (ChildPID == 0)
+					return -2;
+
+				NTdll.CsrClientCallServer(PInfo.Process, PInfo.Thread, PInfo.CID.UniqueProcess,
+					PInfo.CID.UniqueThread);
+				Kernel32.ResumeThread(PInfo.Thread);
+				Kernel32.CloseHandle(PInfo.Process);
+				Kernel32.CloseHandle(PInfo.Thread);
+				return ChildPID;
+			} else if (S == CloneStatus.Child) {
+				Kernel32.FreeConsole();
+				Kernel32.AllocConsole();
+
+				Console.SetIn(new StreamReader(Console.OpenStandardInput()));
+				StreamWriter OutWriter = new StreamWriter(Console.OpenStandardOutput());
+				OutWriter.AutoFlush = true;
+				Console.SetOut(OutWriter);
+				StreamWriter ErrWriter = new StreamWriter(Console.OpenStandardError());
+				ErrWriter.AutoFlush = true;
+				Console.SetError(ErrWriter);
+				return 0;
+			}
+			return -1;
 		}
 	}
 }
