@@ -11,7 +11,7 @@ using System.IO;
 using RGiesecke.DllExport;
 
 namespace Inkjet {
-	public class Magic {
+	class Magic {
 		[DllExport("Init", CallingConvention.Winapi)]
 		public static void Init() {
 			Type[] AllTypes = Assembly.GetExecutingAssembly().GetTypes();
@@ -22,37 +22,42 @@ namespace Inkjet {
 		}
 	}
 
-	static class Program {
-		[Flags()]
-		public enum ModuleHandleFlags : uint {
-			Pin = 0x1,
-			UnchangedRefCount = 0x2,
-			FromAddress = 0x4,
-		}
-
-		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern bool FreeLibrary(IntPtr Lib);
-
-		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern void FreeLibraryAndExitThread(IntPtr Lib, int Code);
-
-		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern bool GetModuleHandleEx(ModuleHandleFlags Flags, string ModuleName, out IntPtr Handle);
+	unsafe static class Program {
+		static IntPtr ThisModule;
 
 		public static bool Unload() {
-			IntPtr This;
-			if (!GetModuleHandleEx(ModuleHandleFlags.UnchangedRefCount, "Inkjet.dll", out This))
+			if (ThisModule == IntPtr.Zero)
 				return false;
-			while (FreeLibrary(This))
+			while (Native.FreeLibrary(ThisModule))
 				;
 			return true;
 		}
 
 		public static void Main() {
+			if (!Native.GetModuleHandleEx(ModuleHandleFlags.UnchangedRefCount, "Inkjet.dll", out ThisModule))
+				ThisModule = IntPtr.Zero;
+
+			IntPtr ExeHandle;
+			List<string> ExportNames = new List<string>();
+			if (Native.GetModuleHandleEx(ModuleHandleFlags.UnchangedRefCount, null, out ExeHandle)) {
+				IMAGE_DOS_HEADER* DosHeader = (IMAGE_DOS_HEADER*)ExeHandle;
+				IMAGE_NT_HEADERS* Header = (IMAGE_NT_HEADERS*)(ExeHandle + (int)DosHeader->LFaNew);
+				IMAGE_EXPORT_DIRECTORY* Exports = (IMAGE_EXPORT_DIRECTORY*)(ExeHandle +
+					Header->OptionalHeader.ExportTable.VirtualAddress);
+
+				IntPtr Names = ExeHandle + Exports->AddressOfNames;
+				for (int i = 0; i < Exports->NumberOfNames; i++) {
+					string Name = Marshal.PtrToStringAnsi(ExeHandle + ((int*)Names)[i]);
+					if (Name.Trim().Length == 0)
+						continue;
+					ExportNames.Add(Name);
+				}
+			}
+
+			File.WriteAllText("E:\\Projects\\Hackery\\bin\\HAAX.txt", string.Join("\n", ExportNames));
+
 			Process Cur = Process.GetCurrentProcess();
-			string Fmt = string.Format("{0} ({1})", Cur.ProcessName, Cur.Id);
-			//File.WriteAllText("E:\\Projects\\Hackery\\bin\\HAAX.txt", Fmt);
-			MessageBox.Show("Magic!", Fmt);
+			MessageBox.Show("Magic!", string.Format("{0} ({1})", Cur.ProcessName, Cur.Id));
 		}
 	}
 }

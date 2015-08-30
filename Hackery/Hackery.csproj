@@ -54,6 +54,7 @@
     <Compile Include="Msvcrt.cs" />
     <Compile Include="NTdll.cs" />
     <Compile Include="ObjectPointer.cs" />
+    <Compile Include="PE_Structures.cs" />
     <Compile Include="Privilege.cs" />
     <Compile Include="ProcessUtils.cs" />
     <Compile Include="Program.cs" />
