@@ -86,8 +86,26 @@ namespace Hackery {
 
 		}
 
+		public static HookHandle CreateHook(IntPtr Old, IntPtr New) {
+			return new HookHandle(Old, New);
+		}
+
+		public static HookHandle CreateHook(MethodInfo Old, IntPtr New) {
+			return CreateHook(Old.MethodHandle.GetFunctionPointer(), New);
+		}
+
+		public static HookHandle CreateHook<THooked>(THooked Old, IntPtr New) {
+			return CreateHook((Old as Delegate).Method, New);
+		}
+
+		public static HookHandle CreateHook(Expression<Action> OldExpr, IntPtr New) {
+			if (OldExpr.Body is MethodCallExpression == false)
+				throw new ArgumentException("Expression body isn't a method!", "OldExpr");
+			return CreateHook(((MethodCallExpression)OldExpr.Body).Method, New);
+		}
+
 		public static HookHandle CreateHook(MethodInfo Old, MethodInfo New) {
-			return new HookHandle(Old.MethodHandle.GetFunctionPointer(), New.MethodHandle.GetFunctionPointer());
+			return CreateHook(Old.MethodHandle.GetFunctionPointer(), New.MethodHandle.GetFunctionPointer());
 		}
 
 		public static HookHandle CreateHook(Expression<Action> OldExpr, MethodInfo New) {

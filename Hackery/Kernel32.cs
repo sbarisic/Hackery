@@ -37,6 +37,13 @@ namespace Hackery {
 		AllAccess = 0x1F0FFF
 	}
 
+	[Flags()]
+	public enum ModuleHandleFlags : uint {
+		Pin = 0x1,
+		UnchangedRefCount = 0x2,
+		FromAddress = 0x4,
+	}
+
 	public unsafe static class Kernel32 {
 		public const uint INFINITE = 0xFFFFFFFF;
 
@@ -57,6 +64,12 @@ namespace Hackery {
 		}
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern bool AllocateUserPhysicalPages(IntPtr Process, ref uint NumOfPages, IntPtr PFNArray);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern bool MapUserPhysicalPages(IntPtr Addr, uint NumOfPages, IntPtr PFNArray);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern bool AllocConsole();
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
@@ -72,7 +85,7 @@ namespace Hackery {
 		public static extern uint ResumeThread(IntPtr Thrd);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern int CloseHandle(IntPtr Hnd);
+		public static extern bool CloseHandle(IntPtr Hnd);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern IntPtr GetCurrentThread();
@@ -90,11 +103,24 @@ namespace Hackery {
 		public static extern IntPtr LoadLibrary(string Name);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern int FreeLibrary(IntPtr Lib);
+		public static extern bool FreeLibrary(IntPtr Lib);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern void FreeLibraryAndExitThread(IntPtr Lib, int Code);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern IntPtr GetModuleHandle(string ModuleName);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern bool GetModuleHandleEx(ModuleHandleFlags Flags, string ModuleName, out IntPtr Handle);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern IntPtr VirtualAllocEx(IntPtr Proc, IntPtr Addr, int Size,
 			AllocType AType = AllocType.Commit, MemProtection Prot = MemProtection.ReadWrite);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern IntPtr VirtualAlloc(IntPtr Addr, int Size, AllocType AType = AllocType.Commit,
+			MemProtection Prot = MemProtection.ReadWrite);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern bool WriteProcessMemory(IntPtr Proc, IntPtr Addr, byte[] Mem, int Size, ref int BytesWritten);
@@ -103,5 +129,8 @@ namespace Hackery {
 			int I = 0;
 			return WriteProcessMemory(Proc, Addr, Mem, Mem.Length, ref I);
 		}
+
+		[DllImport("kernel32", CallingConvention = CallingConvention.Winapi)]
+		public static extern int GetLastError();
 	}
 }

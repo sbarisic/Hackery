@@ -101,19 +101,19 @@ namespace Hackery {
 		}
 
 		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern int RtlCreateUserThread(IntPtr Proc, IntPtr SecDesc, bool CreateSuspended, uint StackZeroBits,
+		public static extern bool RtlCreateUserThread(IntPtr Proc, IntPtr SecDesc, bool CreateSuspended, uint StackZeroBits,
 			uint StackReserved, uint StackCommit, IntPtr StartAddr, IntPtr StartParam, IntPtr Thread, CLIENT_ID* Result);
 
-		public static int RtlCreateUserThread(IntPtr P, IntPtr Fnc, IntPtr Data, out IntPtr Thread) {
+		public static bool RtlCreateUserThread(IntPtr P, IntPtr Fnc, IntPtr Data, out IntPtr Thread) {
 			Thread = IntPtr.Zero;
 			fixed (IntPtr* ThrdPtr = &Thread)
 				return RtlCreateUserThread(P, IntPtr.Zero,
 					false, 0, 0, 0, Fnc, Data, new IntPtr(ThrdPtr), (CLIENT_ID*)0);
 		}
 
-		public static int RtlCreateUserThread(Process P, IntPtr Fnc, IntPtr Data, out IntPtr Thread) {
+		public static bool RtlCreateUserThread(Process P, IntPtr Fnc, IntPtr Data, out IntPtr Thread) {
 			IntPtr Proc = Kernel32.OpenProcess(ProcessAccess.AllAccess, false, P.Id);
-			int Ret = RtlCreateUserThread(Proc, Fnc, Data, out Thread);
+			bool Ret = RtlCreateUserThread(Proc, Fnc, Data, out Thread);
 			Kernel32.CloseHandle(Proc);
 			return Ret;
 		}
