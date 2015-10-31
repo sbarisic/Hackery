@@ -9,8 +9,8 @@ using System.Diagnostics;
 namespace Hackery {
 	[StructLayout(LayoutKind.Sequential)]
 	public struct CLIENT_ID {
-		public IntPtr UniqueProcess;
-		public IntPtr UniqueThread;
+		public uint ProcessID;
+		public uint ThreadID;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -32,14 +32,14 @@ namespace Hackery {
 	public struct PROCESS_INFORMATION {
 		public IntPtr Process;
 		public IntPtr Thread;
-		public CLIENT_ID CID;
+		public CLIENT_ID ClientId;
 
-		public PROCESS_INFORMATION(IntPtr Process, IntPtr Thread, IntPtr PID, IntPtr TID) {
+		public PROCESS_INFORMATION(IntPtr Process, IntPtr Thread, uint PID, uint TID) {
 			this.Process = Process;
 			this.Thread = Thread;
-			this.CID = new CLIENT_ID();
-			this.CID.UniqueProcess = PID;
-			this.CID.UniqueThread = TID;
+			this.ClientId = new CLIENT_ID();
+			this.ClientId.ProcessID = PID;
+			this.ClientId.ThreadID = TID;
 		}
 	}
 
@@ -125,13 +125,17 @@ namespace Hackery {
 		public static extern void RtlExitUserProcess(int Status);
 
 		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern uint ZwAllocateVirtualMemory(IntPtr Proc, ref IntPtr Addr, int ZeroBits, ref IntPtr RegionSize,
+			AllocType AType = AllocType.Commit | AllocType.Reserve, MemProtection Prot = MemProtection.ReadWrite);
+
+		[DllImport("ntdll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern void CsrClientCallServer(CSRMsg* Msg, int A = 0, int B = 0x10000, int C = 0x24);
 
 		public static void CsrClientCallServer(IntPtr Process, IntPtr Thread, int PID, int TID) {
-			CsrClientCallServer(Process, Thread, new IntPtr(PID), new IntPtr(TID));
+			CsrClientCallServer(Process, Thread, (uint)PID, (uint)TID);
 		}
 
-		public static void CsrClientCallServer(IntPtr Process, IntPtr Thread, IntPtr PID, IntPtr TID) {
+		public static void CsrClientCallServer(IntPtr Process, IntPtr Thread, uint PID, uint TID) {
 			CSRMsg CSRMessage = new CSRMsg();
 			CSRMessage.ProcessInfo = new PROCESS_INFORMATION(Process, Thread, PID, TID);
 			NTdll.CsrClientCallServer(&CSRMessage);

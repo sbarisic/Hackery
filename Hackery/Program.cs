@@ -26,7 +26,7 @@ namespace Hackery {
 				Process P = Process.GetProcessById(ReadInt("Enter PID: "));
 				Console.WriteLine("Injecting into {0}", P.Id);
 
-				Magic.Inject(P.Id, "Inkjet.dll", "Init");
+				Magic.Inject(P.Id, "Inkjet.dll", "Init", false, true);
 				Console.WriteLine("Done!");
 			}
 

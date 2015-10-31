@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Hackery {
-	class UObject : IDisposable {
+	public class UObject : IDisposable {
 		public UObject() {
 			throw new Exception("UObjects can only be instantiated in unmanaged memory");
 		}

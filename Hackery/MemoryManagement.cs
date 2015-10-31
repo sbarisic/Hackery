@@ -4,7 +4,7 @@ namespace Hackery {
 	/// <summary>
 	/// Provides memory management convenience functions.
 	/// </summary>
-	static class MemoryManagement {
+public	static class MemoryManagement {
 		/// <summary>
 		/// <para>A handle to safely temporarily change memory protection.</para>
 		/// <para>The protection is reset when the handle is disposed.</para>

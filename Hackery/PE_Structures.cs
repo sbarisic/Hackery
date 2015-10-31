@@ -8,14 +8,14 @@ using System.Runtime.InteropServices;
 
 namespace Hackery {
 	[StructLayout(LayoutKind.Sequential)]
-	struct IMAGE_NT_HEADERS {
+	public struct IMAGE_NT_HEADERS {
 		public short Signature;
 		public IMAGE_FILE_HEADER FileHeader;
 		public IMAGE_OPTIONAL_HEADER OptionalHeader;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct IMAGE_FILE_HEADER {
+	public struct IMAGE_FILE_HEADER {
 		public short Machine;
 		public short NumberOfSections;
 		public int TimeDateStamp;
@@ -26,7 +26,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Explicit)]
-	unsafe struct IMAGE_BASE {
+	public unsafe struct IMAGE_BASE {
 		[FieldOffset(0)]
 		public int BaseOfData;
 		[FieldOffset(sizeof(int))]
@@ -36,7 +36,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	unsafe struct IMAGE_OPTIONAL_HEADER {
+	public unsafe struct IMAGE_OPTIONAL_HEADER {
 		public short Magic;
 		public byte MajorLinkerVersion;
 		public byte MinorLinkerVersion;
@@ -85,13 +85,13 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct IMAGE_DATA_DIRECTORY {
+	public struct IMAGE_DATA_DIRECTORY {
 		public int VirtualAddress;
 		public int Size;
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct IMAGE_EXPORT_DIRECTORY {
+	public struct IMAGE_EXPORT_DIRECTORY {
 		public int Characteristics;
 		public int TimeDateStamp;
 		public short MajorVersion;
@@ -106,7 +106,7 @@ namespace Hackery {
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	unsafe struct IMAGE_DOS_HEADER {
+	public unsafe struct IMAGE_DOS_HEADER {
 		public ushort Magic;
 		public ushort CBLP;
 		public ushort CP;

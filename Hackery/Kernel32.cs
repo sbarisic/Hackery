@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 
 namespace Hackery {
-	[Flags()]
+	[Flags]
 	public enum MemProtection : uint {
 		NoAccess = 0x01,
 		ReadOnly = 0x02,
@@ -22,7 +22,7 @@ namespace Hackery {
 		WriteCombine = 0x400
 	}
 
-	[Flags()]
+	[Flags]
 	public enum AllocType : uint {
 		Commit = 0x1000,
 		Reserve = 0x2000,
@@ -37,15 +37,75 @@ namespace Hackery {
 		AllAccess = 0x1F0FFF
 	}
 
-	[Flags()]
+	[Flags]
 	public enum ModuleHandleFlags : uint {
 		Pin = 0x1,
 		UnchangedRefCount = 0x2,
 		FromAddress = 0x4,
 	}
 
+	[Flags]
+	public enum ThreadAccess : int {
+		TERMINATE = (0x0001),
+		SUSPEND_RESUME = (0x0002),
+		GET_CONTEXT = (0x0008),
+		SET_CONTEXT = (0x0010),
+		SET_INFORMATION = (0x0020),
+		QUERY_INFORMATION = (0x0040),
+		SET_THREAD_TOKEN = (0x0080),
+		IMPERSONATE = (0x0100),
+		DIRECT_IMPERSONATION = (0x0200)
+	}
+
+	[Flags]
+	public enum ProcessCreationFlags : uint {
+		ZERO_FLAG = 0x00000000,
+		CREATE_BREAKAWAY_FROM_JOB = 0x01000000,
+		CREATE_DEFAULT_ERROR_MODE = 0x04000000,
+		CREATE_NEW_CONSOLE = 0x00000010,
+		CREATE_NEW_PROCESS_GROUP = 0x00000200,
+		CREATE_NO_WINDOW = 0x08000000,
+		CREATE_PROTECTED_PROCESS = 0x00040000,
+		CREATE_PRESERVE_CODE_AUTHZ_LEVEL = 0x02000000,
+		CREATE_SEPARATE_WOW_VDM = 0x00001000,
+		CREATE_SHARED_WOW_VDM = 0x00001000,
+		CREATE_SUSPENDED = 0x00000004,
+		CREATE_UNICODE_ENVIRONMENT = 0x00000400,
+		DEBUG_ONLY_THIS_PROCESS = 0x00000002,
+		DEBUG_PROCESS = 0x00000001,
+		DETACHED_PROCESS = 0x00000008,
+		EXTENDED_STARTUPINFO_PRESENT = 0x00080000,
+		INHERIT_PARENT_AFFINITY = 0x00010000
+	}
+
+	public struct STARTUPINFO {
+		public uint cb;
+		public string lpReserved;
+		public string lpDesktop;
+		public string lpTitle;
+		public uint dwX;
+		public uint dwY;
+		public uint dwXSize;
+		public uint dwYSize;
+		public uint dwXCountChars;
+		public uint dwYCountChars;
+		public uint dwFillAttribute;
+		public uint dwFlags;
+		public short wShowWindow;
+		public short cbReserved2;
+		public IntPtr lpReserved2;
+		public IntPtr hStdInput;
+		public IntPtr hStdOutput;
+		public IntPtr hStdError;
+	}
+
 	public unsafe static class Kernel32 {
 		public const uint INFINITE = 0xFFFFFFFF;
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern bool CreateProcess(string AppName, string CmdLine, IntPtr Attributes,
+			IntPtr ThreadAttribs, bool InheritHandles, ProcessCreationFlags CFlags,
+			IntPtr Env, string Currentdir, ref STARTUPINFO StInfo, out PROCESS_INFORMATION ProcInfo);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern bool VirtualProtect(IntPtr Addr, uint Size, MemProtection NewProtect, out MemProtection OldProtect);
@@ -82,13 +142,22 @@ namespace Hackery {
 		public static extern int GetProcessId(IntPtr Hnd);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-		public static extern uint ResumeThread(IntPtr Thrd);
-
-		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern bool CloseHandle(IntPtr Hnd);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern IntPtr GetCurrentThread();
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern uint GetCurrentThreadId();
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern IntPtr OpenThread(ThreadAccess Access, bool InheritHandle, uint ThreadID);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern int SuspendThread(IntPtr HThread);
+
+		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+		public static extern int ResumeThread(IntPtr Thrd);
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern int WaitForSingleObject(IntPtr Handle, uint MS);
@@ -98,6 +167,12 @@ namespace Hackery {
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern IntPtr GetProcAddress(IntPtr Lib, string ProcName);
+
+		public static T GetProcAddress<T>(IntPtr Lib, string ProcName) where T : class {
+			if (!typeof(Delegate).IsAssignableFrom(typeof(T)))
+				throw new Exception("T has to be a delegate type");
+			return Marshal.GetDelegateForFunctionPointer(GetProcAddress(Lib, ProcName), typeof(T)) as T;
+		}
 
 		[DllImport("kernel32", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
 		public static extern IntPtr LoadLibrary(string Name);
@@ -132,5 +207,12 @@ namespace Hackery {
 
 		[DllImport("kernel32", CallingConvention = CallingConvention.Winapi)]
 		public static extern int GetLastError();
+
+		[DllImport("kernel32", SetLastError = true)]
+		public static extern uint GetModuleFileName(IntPtr Mod, StringBuilder FileName, int Size = 80);
+
+		public static uint GetModuleFileName(IntPtr Mod, StringBuilder FileName) {
+			return GetModuleFileName(Mod, FileName, FileName.Capacity);
+		}
 	}
 }

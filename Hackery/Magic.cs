@@ -10,7 +10,7 @@ using System.Threading;
 using System.IO;
 
 namespace Hackery {
-	static class Magic {
+	public static class Magic {
 		public static void UnmanagedDelete<T>(T Obj) where T : UObject {
 			if (Obj == null)
 				return;
@@ -63,8 +63,8 @@ namespace Hackery {
 				if (ChildPID == 0)
 					return -2;
 
-				NTdll.CsrClientCallServer(PInfo.Process, PInfo.Thread, PInfo.CID.UniqueProcess,
-					PInfo.CID.UniqueThread);
+				NTdll.CsrClientCallServer(PInfo.Process, PInfo.Thread, PInfo.CID.ProcessID,
+					PInfo.CID.ThreadID);
 				Kernel32.ResumeThread(PInfo.Thread);
 				Kernel32.CloseHandle(PInfo.Process);
 				Kernel32.CloseHandle(PInfo.Thread);
@@ -92,9 +92,16 @@ namespace Hackery {
 			return Len + 1;
 		}
 
+		public static void Inject(Process Proc, string Module, string Fnc, bool WaitAndFree = false, bool Debug = false) {
+			Inject(Proc.Id, Module, Fnc, WaitAndFree, Debug);
+		}
+
 		public static void Inject(int PID, string Module, string Fnc, bool WaitAndFree = false, bool Debug = false) {
 			if (Debug)
-				Process.EnterDebugMode();
+				try {
+					Process.EnterDebugMode();
+				} catch (Win32Exception) {
+				}
 
 			IntPtr Kernel = Kernel32.LoadLibrary("kernel32.dll");
 			if (Kernel == IntPtr.Zero)
@@ -127,7 +134,10 @@ namespace Hackery {
 			if (!Kernel32.FreeLibrary(Mod))
 				throw new Win32Exception();
 			if (Debug)
-				Process.LeaveDebugMode();
+				try {
+					Process.LeaveDebugMode();
+				} catch (Win32Exception) {
+				}
 		}
 
 		public static int ExecThread(IntPtr Proc, IntPtr Func, IntPtr Param, bool Wait = false) {
@@ -139,6 +149,61 @@ namespace Hackery {
 			if (!Kernel32.CloseHandle(Thread))
 				throw new Win32Exception();
 			return Ret;
+		}
+
+		public static ProcessThread GetCurrentProcessThread() {
+			//Thread.BeginThreadAffinity();
+			int CurThreadID = (int)Kernel32.GetCurrentThreadId();
+			//Thread.EndThreadAffinity();
+
+			Process CurProc = Process.GetCurrentProcess();
+			foreach (ProcessThread PThread in CurProc.Threads)
+				if (PThread.Id == CurThreadID)
+					return PThread;
+			return null;
+		}
+
+		public static void SuspendProcess(Process Proc, ProcessThread Except = null) {
+			if (string.IsNullOrEmpty(Proc.ProcessName))
+				return;
+
+			foreach (ProcessThread PThread in Proc.Threads) {
+				if (PThread == Except)
+					continue;
+				IntPtr OpenThread = Kernel32.OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)PThread.Id);
+				if (OpenThread == IntPtr.Zero)
+					continue;
+
+
+				Kernel32.SuspendThread(OpenThread);
+				Kernel32.CloseHandle(OpenThread);
+			}
+		}
+
+		public static void ResumeProcess(Process Proc) {
+			if (string.IsNullOrEmpty(Proc.ProcessName))
+				return;
+
+			foreach (ProcessThread ProcessThread in Proc.Threads) {
+				IntPtr OpenThread = Kernel32.OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)ProcessThread.Id);
+
+				if (OpenThread == IntPtr.Zero)
+					continue;
+
+				/*int Suspendcount = 0;
+				do {
+					Suspendcount = Kernel32.ResumeThread(OpenThread);
+				} while (Suspendcount > 0);*/
+				Kernel32.ResumeThread(OpenThread);
+				Kernel32.CloseHandle(OpenThread);
+			}
+		}
+
+		public static Process CreateProcess(string Pth, string CmdLine, ProcessCreationFlags Flags) {
+			STARTUPINFO SInf = new STARTUPINFO();
+			PROCESS_INFORMATION PInfo = new PROCESS_INFORMATION();
+			Kernel32.CreateProcess(Pth, CmdLine, IntPtr.Zero, IntPtr.Zero, false, Flags, IntPtr.Zero, null, ref SInf, out PInfo);
+			return Process.GetProcessById((int)PInfo.ClientId.ProcessID);
 		}
 	}
 }

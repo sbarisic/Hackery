@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Hackery {
-	class Privilege {
+	public class Privilege {
 		static Type PrivType = Type.GetType("System.Security.AccessControl.Privilege");
 		object Priv;
 

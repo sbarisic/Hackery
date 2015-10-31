@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Collections.Generic;
 
 namespace Hackery {
 	/// <summary>
@@ -10,6 +11,26 @@ namespace Hackery {
 	/// <para>The hook is reset when the handle is disposed.</para>
 	/// </summary>
 	public class HookHandle : IDisposable {
+		/*static void DummyA() {
+		}
+
+		static void DummyB() {
+		}
+
+		static HookHandle() {
+			HookHandle InitHandle = HookHandle.CreateHook<Action>(DummyA, DummyB);
+			InitHandle.Hook();
+			InitHandle.Dispose();
+		}*/
+
+		static HashSet<HookHandle> HookHandles = new HashSet<HookHandle>();
+
+		public static void DisposeAllHandles() {
+			foreach (HookHandle H in HookHandles)
+				H.Dispose();
+			HookHandles.Clear();
+		}
+
 		/// <summary>
 		/// The hooked method.
 		/// </summary>
@@ -23,6 +44,7 @@ namespace Hackery {
 			private set;
 		}
 
+		bool Disposed;
 		byte[] _OriginalIntro;
 		byte[] _HookedIntro;
 
@@ -36,7 +58,8 @@ namespace Hackery {
 			HookedFunc = hookedFunc;
 			_OriginalIntro = originalIntro;
 			_HookedIntro = hookedIntro;
-			Hook();
+			HookHandles.Add(this);
+			//Hook();
 		}
 
 		/// <summary>
@@ -69,7 +92,7 @@ namespace Hackery {
 		}
 
 		public void Hook() {
-			if (Hooked)
+			if (Hooked || Disposed)
 				return;
 			Hooked = true;
 			WriteIntro(_HookedIntro);
@@ -79,13 +102,10 @@ namespace Hackery {
 		/// Restores <see cref="HookedMethod"/> to its previous state.
 		/// </summary>
 		public void Dispose() {
+			Disposed = true;
 			Unhook();
 		}
-
-		public static void CreateHook() {
-
-		}
-
+		
 		public static HookHandle CreateHook(IntPtr Old, IntPtr New) {
 			return new HookHandle(Old, New);
 		}
@@ -118,6 +138,23 @@ namespace Hackery {
 			if (NewExpr.Body is MethodCallExpression == false)
 				throw new ArgumentException("Expression body isn't a method!", "NewExpr");
 			return CreateHook(OldExpr, ((MethodCallExpression)NewExpr.Body).Method);
+		}
+
+		public static HookHandle CreateHook<T>(IntPtr Old, T New) {
+			if (typeof(Delegate).IsAssignableFrom(typeof(T)) == false)
+				throw new InvalidOperationException("T must be a Delegate type.");
+			IntPtr NewPtr = ((Delegate)(object)New).Method.MethodHandle.GetFunctionPointer();
+			return CreateHook(Old, NewPtr);
+		}
+
+		public static HookHandle CreateHook(string Module, string Func, IntPtr New) {
+			IntPtr ModuleHandle = Kernel32.GetModuleHandle(Module);
+			if (ModuleHandle == IntPtr.Zero)
+				throw new Exception("Could not get module " + Module);
+			IntPtr ProcAddr = Kernel32.GetProcAddress(ModuleHandle, Func);
+			if (ProcAddr == IntPtr.Zero)
+				throw new Exception("Could not get function " + Func);
+			return CreateHook(ProcAddr, New);
 		}
 
 		/// <summary>

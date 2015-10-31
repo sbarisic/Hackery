@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Hackery {
-	static class ObjectPointer {
+public	static class ObjectPointer {
 		static ObjectPointer() {
 			HookHandle.CreateHook<Func<object, uint>, Func<object, object>>(_ToPointer, _ReturnObject);
 			HookHandle.CreateHook<Func<uint, object>, Func<uint, uint>>(_ToObject, _ReturnUInt);

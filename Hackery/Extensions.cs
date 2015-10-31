@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 
 namespace Hackery {
-	static class Extensions {
+	public static class Extensions {
 		public static MethodInfo GetStaticMethod(this Type T, string Name) {
 			return T.GetMethod(Name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 		}
