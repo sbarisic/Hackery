@@ -202,7 +202,9 @@ namespace Hackery {
 		public static Process CreateProcess(string Pth, string CmdLine, ProcessCreationFlags Flags) {
 			STARTUPINFO SInf = new STARTUPINFO();
 			PROCESS_INFORMATION PInfo = new PROCESS_INFORMATION();
-			Kernel32.CreateProcess(Pth, CmdLine, IntPtr.Zero, IntPtr.Zero, false, Flags, IntPtr.Zero, null, ref SInf, out PInfo);
+			if (!Kernel32.CreateProcess(Pth, CmdLine, IntPtr.Zero, IntPtr.Zero, false, Flags,
+				IntPtr.Zero, null, ref SInf, out PInfo))
+				new Win32Exception();
 			return Process.GetProcessById((int)PInfo.ClientId.ProcessID);
 		}
 	}
